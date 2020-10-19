@@ -1,17 +1,20 @@
 module Course.Optional where
 
-import Control.Applicative as A
-import Control.Monad as M
---import Course.Core
-import Prelude as P
+import Prelude
+
+import Utils.Error (error)
 
 -- | The `Optional` data type contains 0 or 1 value.
 --
 -- It might be thought of as a list, with a maximum length of one.
-data Optional a =
-  Full a
-  | Empty
---   deriving (Eq, Show)
+data Optional a = Full a | Empty
+
+derive instance optionalExactlyOne :: Eq a => Eq (Optional a)
+
+instance showExactlyOne :: Show a => Show (Optional a) where
+    show :: forall a. Show a => Optional a -> String
+    show (Full a) = show a
+    show Empty = ""
 
 -- -- | Map the given function on the possible value.
 -- --
@@ -20,12 +23,8 @@ data Optional a =
 -- --
 -- -- >>> mapOptional (+1) (Full 8)
 -- -- Full 9
--- mapOptional ::
---   (a -> b)
---   -> Optional a
---   -> Optional b
--- mapOptional =
---   error "todo: Course.Optional#mapOptional"
+mapOptional :: forall a b. (a -> b) -> Optional a -> Optional b
+mapOptional = error "todo: Course.Optional#mapOptional"
 
 -- -- | Bind the given function on the possible value.
 -- --
@@ -37,12 +36,8 @@ data Optional a =
 -- --
 -- -- >>> bindOptional (\n -> if even n then Full (n - 1) else Full (n + 1)) (Full 9)
 -- -- Full 10
--- bindOptional ::
---   (a -> Optional b)
---   -> Optional a
---   -> Optional b
--- bindOptional =
---   error "todo: Course.Optional#bindOptional"
+-- bindOptional :: forall a b. (a -> Optional b) -> Optional a -> Optional b
+-- bindOptional = error "todo: Course.Optional#bindOptional"
 
 -- -- | Return the possible value if it exists; otherwise, the second argument.
 -- --
@@ -51,12 +46,10 @@ data Optional a =
 -- --
 -- -- >>> Empty ?? 99
 -- -- 99
--- (??) ::
---   Optional a
---   -> a
---   -> a
--- (??) =
---   error "todo: Course.Optional#(??)"
+-- optional :: forall a. Optional a -> a -> a
+-- optional = error "todo: Course.Optional#(??)"
+
+-- infixl 12 optional as ??     
 
 -- -- | Try the first optional for a value. If it has a value, use it; otherwise,
 -- -- use the second value.
@@ -72,12 +65,10 @@ data Optional a =
 -- --
 -- -- >>> Empty <+> Empty
 -- -- Empty
--- (<+>) ::
---   Optional a
---   -> Optional a
---   -> Optional a
--- (<+>) =
---   error "todo: Course.Optional#(<+>)"  
+-- eitherOptional :: forall a. Optional a -> Optional a -> Optional a
+-- eitherOptional = error "todo: Course.Optional#(<+>)"  
+
+-- infixl 12 eitherOptional as <+>
 
 -- applyOptional :: Optional (a -> b) -> Optional a -> Optional b
 -- applyOptional f a = bindOptional (\f' -> mapOptional f' a) f

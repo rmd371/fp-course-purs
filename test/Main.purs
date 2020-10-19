@@ -4,8 +4,9 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Class.Console (log)
+import Test.OptionalSpec (optionalSpec)
 
 main :: Effect Unit
 main = do
+  optionalSpec
   log "🍝"
-  log "You should add some tests."
