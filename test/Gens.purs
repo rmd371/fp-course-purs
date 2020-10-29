@@ -1,54 +1,57 @@
 
 module Course.Gens where
 
-
-import Course.Core
-import Prelude
-
-import Data.Foldable (foldMap)
+import Course.List (List(..), hlist, listh, (:.))
+import Data.Foldable (foldr)
+import Data.Tuple (Tuple(..))
+import Data.Tuple.Nested (Tuple3, tuple3)
+import Prelude (map, (<$>), (<*>))
+import Test.QuickCheck (class Arbitrary, arbitrary)
+import Test.QuickCheck.Gen (Gen)
+import Test.Spec.QuickCheck (quickCheck)
 
 -- import           Course.List         (List (..), hlist, listh)
 -- import           Course.ListZipper   (ListZipper (..), zipper)
 
--- genList :: Arbitrary a => Gen (List a)
--- genList = P.fmap ((P.foldr (:.) Nil) :: Array a -> List a) arbitrary
+genList :: forall a. Arbitrary a => Gen (List a)
+genList = map ((foldr (:.) Nil) :: Array a -> List a) arbitrary
 
--- shrinkList :: Arbitrary a => List a -> Array (List a)
--- shrinkList = foldMap listh . shrink . hlist
+-- shrinkList :: forall a. Arbitrary a => List a -> Array (List a)
+-- shrinkList l = map listh $ shrink $ hlist l
 
--- genIntegerList :: Gen (List Integer)
--- genIntegerList = genList
+genIntegerList :: Gen (List Int)
+genIntegerList = genList
 
--- genIntegerAndList :: Gen (Tuple (Integer (List Integer)))
--- genIntegerAndList = foldMap (P.fmap listh) arbitrary
+genIntegerAndList :: Gen (Tuple Int (List Int))
+genIntegerAndList = map (map listh) arbitrary
 
 -- shrinkIntegerAndList :: Integer -> List Integer -> Array (Tuple Integer (List Integer))
 -- shrinkIntegerAndList = foldMap (foldMap listh) . shrink . foldMap hlist
 
--- genTwoLists :: Gen (Tuple (List Integer) (List Integer))
--- genTwoLists = (,) P.<$> genIntegerList P.<*> genIntegerList
+genTwoLists :: Gen (Tuple (List Int) (List Int))
+genTwoLists = Tuple <$> genIntegerList <*> genIntegerList
 
 -- shrinkTwoLists :: List Integer -> List Integer -> Array (Tuple (List Integer) (List Integer))
 -- shrinkTwoLists a b = P.fmap (\as bs -> (Tuple (listh as) (listh bs))) $ shrink (Tuple (hlist a) (hlist b))
 
--- genThreeLists :: Gen (List Integer, List Integer, List Integer)
--- genThreeLists = (,,) P.<$> genIntegerList P.<*> genIntegerList P.<*> genIntegerList
+genThreeLists :: Gen (Tuple3 (List Int) (List Int) (List Int))
+genThreeLists = tuple3 <$> genIntegerList <*> genIntegerList <*> genIntegerList
 
 -- shrinkThreeLists :: List Integer -> List Integer -> List Integer -> Array (Tuple3 (List Integer) (List Integer) (List Integer))
 -- shrinkThreeLists a b c = foldMap (\as bs cs -> (Tuple3 (listh as) (listh bs) (listh cs)) $ shrink (hlist a, hlist b, hlist c)
 
--- genListOfLists :: Gen (List (List Integer))
--- genListOfLists = P.fmap (P.fmap listh) (genList :: (Gen (List [Integer])))
+genListOfLists :: Gen (List (List Int))
+genListOfLists = map (map listh) (genList :: (Gen (List (Array Int))))
 
 -- shrinkListOfLists :: Arbitrary a => List (List a) -> [List (List a)]
 -- shrinkListOfLists = P.fmap (P.fmap listh). shrinkList . P.fmap hlist
 
--- forAllLists :: Testable prop => (List Integer -> prop) -> Property
+-- forAllLists :: Testable prop => (List Int -> prop) -> Property
 -- forAllLists = forAllShrink genIntegerList shrinkList
 
--- -- (List Integer) and a Bool
--- genListAndBool :: Gen (List Integer, Bool)
--- genListAndBool = (,) P.<$> genIntegerList P.<*> arbitrary
+-- (List Integer) and a Bool
+genListAndBool :: Gen (Tuple (List Int) Boolean)
+genListAndBool = Tuple <$> genIntegerList <*> arbitrary
 
 -- shrinkListAndBool :: (List Integer, Bool) -> [(List Integer, Bool)]
 -- shrinkListAndBool (xs,b) = (,) P.<$> (shrinkList xs) P.<*> (shrink b)
