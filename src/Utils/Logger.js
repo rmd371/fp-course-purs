@@ -1,0 +1,1 @@
+exports.mylog = str => val => (console.log(str), val);

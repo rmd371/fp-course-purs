@@ -2,10 +2,13 @@ module Test.OptionalSpec where
 
 import Prelude
 
+import Course.List (foldLeft)
 import Course.Optional (Optional(..), mapOptional, bindOptional, (??), (<+>))
 import Data.Int (even)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
+import Effect.Class (liftEffect)
+import Test.QuickCheck (quickCheck, quickCheckGen, (<?>), (>?))
 import Test.Spec (describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter (consoleReporter)
@@ -48,3 +51,12 @@ optionalSpec = launchAff_ $ runSpec [consoleReporter] do
       (Empty <+> Full 9) `shouldEqual` Full 9
     it "both empty" $
       (Empty <+> Empty) `shouldEqual` (Empty :: Optional Int)
+--     it "quickcheck test" $
+--       liftEffect $ quickCheck \x -> myFunc x > x <?> "Test failed for input " <> show x
+--     it "quickcheck test2" $
+--       liftEffect $ quickCheck \x -> (myFunc x) >? x
+--     it "subtracting each element in a list from its sum is always 0" $
+--       liftEffect $ quickCheck (\x -> foldLeft (-) (sum x) x == 0)
+
+-- myFunc :: Int -> Int
+-- myFunc x = x + 1
