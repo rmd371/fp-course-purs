@@ -51,10 +51,10 @@ instance showList :: Show t => Show (List t) where
   show = show <<< foldRight (:) []
 
 -- The list of integers from zero to infinity.
--- infinity :: List Int
--- infinity =
---   let inf x = x :. inf (x+1)
---   in inf 0
+infinity :: List Int
+infinity = listh (0..1000)
+  -- let inf x = if x < 10000 then x :. inf (x+1) else x :. Nil
+  -- in inf 0
 
 -- functions over List that you may consider using
 foldRight :: forall a b. (a -> b -> b) -> b -> List a -> b
@@ -81,7 +81,7 @@ foldLeft f b l = foldl f b (hlist l)
 --
 -- prop> \x -> x `headOr` Nil == x
 headOr :: forall a. a -> List a -> a
-headOr = error "todo: Course.List#headOr"
+--headOr = error "todo: Course.List#headOr"
 
 -- -- | The product of the elements of a list.
 -- --
@@ -114,26 +114,8 @@ headOr = error "todo: Course.List#headOr"
 -- -- 3
 -- --
 -- -- prop> \x -> sum (map (const 1) x) == length x
--- length :: forall a. 
---   List a
---   -> Int
--- length =
---   error "todo: Course.List#length"
-
--- -- | Map the given function on each element of the list.
--- --
--- -- >>> map (+10) (1 :. 2 :. 3 :. Nil)
--- -- [11,12,13]
--- --
--- -- prop> \x -> headOr x (map (+1) infinity) == 1
--- --
--- -- prop> \x -> map id x == x
--- map :: forall a b. 
---   (a -> b)
---   -> List a
---   -> List b
--- map =
---   error "todo: Course.List#map"
+-- length :: forall a. List a -> Int
+-- length = error "todo: Course.List#length"
 
 -- -- | Return elements satisfying the given predicate.
 -- --
@@ -145,31 +127,36 @@ headOr = error "todo: Course.List#headOr"
 -- -- prop> \x -> filter (const True) x == x
 -- --
 -- -- prop> \x -> filter (const False) x == Nil
--- filter :: forall a. 
---   (a -> Boolean)
---   -> List a
---   -> List a
--- filter =
---   error "todo: Course.List#filter"
+-- filter :: forall a. (a -> Boolean) -> List a -> List a
+-- filter = error "todo: Course.List#filter"
 
--- -- | Append two lists to a new list.
+-- -- | Map the given function on each element of the list.
 -- --
--- -- >>> (1 :. 2 :. 3 :. Nil) ++ (4 :. 5 :. 6 :. Nil)
--- -- [1,2,3,4,5,6]
+-- -- >>> map (+10) (1 :. 2 :. 3 :. Nil)
+-- -- [11,12,13]
 -- --
--- -- prop> \x -> headOr x (Nil ++ infinity) == 0
+-- -- prop> \x -> headOr x (map (+1) infinity) == 1
 -- --
--- -- prop> \x -> headOr x (y ++ infinity) == headOr 0 y
--- --
--- -- prop> \x -> (x ++ y) ++ z == x ++ (y ++ z)
--- --
--- -- prop> \x -> x ++ Nil == x
--- appendList :: forall a. List a -> List a -> List a
--- appendList = error "todo: Course.List#(++)"
+-- -- prop> \x -> map id x == x
+-- instance functorList :: Functor List where
+--   map :: forall a b. (a -> b) -> List a -> List b
+--   map = error "todo: Course.List#map"
 
+-- -- -- | Append two lists to a new list.
+-- -- --
+-- -- -- >>> (1 :. 2 :. 3 :. Nil) ++ (4 :. 5 :. 6 :. Nil)
+-- -- -- [1,2,3,4,5,6]
+-- -- --
+-- -- -- prop> \x -> headOr x (Nil ++ infinity) == 0
+-- -- --
+-- -- -- prop> \x -> headOr x (y ++ infinity) == headOr 0 y
+-- -- --
+-- -- -- prop> \x -> (x ++ y) ++ z == x ++ (y ++ z)
+-- -- --
+-- -- -- prop> \x -> x ++ Nil == x
 -- instance semigroupList :: Semigroup (List a) where
 --   append :: forall a. List a -> List a -> List a
---   append = appendList
+--   append = error "todo: Course.List#(<>)"
 
 -- -- | Flatten a list of lists to a list.
 -- --
@@ -181,11 +168,8 @@ headOr = error "todo: Course.List#headOr"
 -- -- prop> \x -> headOr x (flatten (y :. infinity :. Nil)) == headOr 0 y
 -- --
 -- -- prop> \x -> sum (map length x) == length (flatten x)
--- flatten :: forall a. 
---   List (List a)
---   -> List a
--- flatten =
---   error "todo: Course.List#flatten"
+-- flatten :: forall a. List (List a) -> List a
+-- flatten = error "todo: Course.List#flatten"
 
 -- -- | Map a function then flatten to a list.
 -- --
@@ -197,22 +181,15 @@ headOr = error "todo: Course.List#headOr"
 -- -- prop> \x -> headOr x (flatMap id (y :. infinity :. Nil)) == headOr 0 y
 -- --
 -- -- prop> \x -> flatMap id (x :: List (List Int)) == flatten x
--- flatMap :: forall a b. 
---   (a -> List b)
---   -> List a
---   -> List b
--- flatMap =
---   error "todo: Course.List#flatMap"
+-- flatMap :: forall a b. (a -> List b) -> List a -> List b
+-- flatMap = error "todo: Course.List#flatMap"
 
 -- -- | Flatten a list of lists to a list (again).
 -- -- HOWEVER, this time use the /flatMap/ function that you just wrote.
 -- --
 -- -- prop> \x -> let types = x :: List (List Int) in flatten x == flattenAgain x
--- flattenAgain :: forall a. 
---   List (List a)
---   -> List a
--- flattenAgain =
---   error "todo: Course.List#flattenAgain"
+-- flattenAgain :: forall a. List (List a) -> List a
+-- flattenAgain = error "todo: Course.List#flattenAgain"
 
 -- -- | Convert a list of optional values to an optional list of values.
 -- --
@@ -255,12 +232,8 @@ headOr = error "todo: Course.List#headOr"
 -- --
 -- -- >>> find (const True) infinity
 -- -- Full 0
--- find :: forall a. 
---   (a -> Boolean)
---   -> List a
---   -> Optional a
--- find =
---   error "todo: Course.List#find"
+-- find :: forall a. (a -> Boolean) -> List a -> Optional a
+-- find = error "todo: Course.List#find"
 
 -- -- | Determine if the length of the given list is greater than 4.
 -- --
@@ -292,19 +265,16 @@ headOr = error "todo: Course.List#headOr"
 -- reverse :: forall a. List a -> List a
 -- reverse = error "todo: Course.List#reverse"
 
--- -- | Produce an infinite `List` that seeds with the given value at its head,
--- -- then runs the given function for subsequent elements
--- --
--- -- >>> let (x:.y:.z:.w:._) = produce (+1) 0 in [x,y,z,w]
--- -- [0,1,2,3]
--- --
--- -- >>> let (x:.y:.z:.w:._) = produce (*2) 1 in [x,y,z,w]
--- -- [1,2,4,8]
--- produce :: forall a. 
---   (a -> a)
---   -> a
---   -> List a
--- produce f x = x :. produce f (f x)
+-- | Produce an infinite `List` that seeds with the given value at its head,
+-- then runs the given function for subsequent elements
+--
+-- >>> let (x:.y:.z:.w:._) = produce (+1) 0 in [x,y,z,w]
+-- [0,1,2,3]
+--
+-- >>> let (x:.y:.z:.w:._) = produce (*2) 1 in [x,y,z,w]
+-- [1,2,4,8]
+produce :: forall a. (a -> a) -> a -> List a
+produce f x = x :. produce f (f x)
 
 -- -- | Do anything other than reverse a list.
 -- -- Is it even possible?
@@ -323,10 +293,8 @@ headOr = error "todo: Course.List#headOr"
 
 -- ---- End of list exercises
 
--- largeList ::
---   List Int
--- largeList =
---   listh [1..50000]
+largeList :: List Int
+largeList = listh (1..50000)
 
 hlist :: forall a. List a -> Array a
 hlist = foldRight (:) []
@@ -527,10 +495,10 @@ instance arbitraryList :: Arbitrary a => Arbitrary (List a) where
 -- intersectBy e xs ys =
 --   filter (\x -> any (e x) ys) xs
 
--- take :: forall a. forall a. Int -> List a -> List a
--- take n _ | n <= 0 = Nil
--- take _ Nil = Nil
--- take n (x:.xs) = x :. take (n - 1) xs
+take :: forall a. Int -> List a -> List a
+take n _ | n <= 0 = Nil
+take _ Nil = Nil
+take n (x:.xs) = x :. take (n - 1) xs
 
 -- drop :: forall a. Int -> List a -> List a
 -- drop n xs | n <= 0 =
@@ -619,10 +587,6 @@ instance arbitraryList :: Arbitrary a => Arbitrary (List a) where
 
 -- show' :: forall a. Show a => a -> List Char
 -- show' a = listh (toCharArray (show a))
-
-instance listFunctor :: Functor List where
-  map :: forall a b. (a -> b) -> List a -> List b
-  map f l = listh $ P.map f $ hlist l
 
 -- instance applicativeList :: Applicative List where
 --   -- (<*>) =
