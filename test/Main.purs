@@ -2,13 +2,15 @@ module Test.Main where
 
 import Prelude
 
-import Course.ListSpec (listSpec)
 import Effect (Effect)
-import Effect.Class.Console (log)
---import Test.OptionalSpec (optionalSpec)
+import Effect.Aff (launchAff_)
+import Test.ListSpec (listSpec)
+import Test.OptionalSpec (optionalSpec)
+import Test.Spec.Reporter (consoleReporter)
+import Test.Spec.Runner (runSpec)
 
 main :: Effect Unit
-main = do
-  --optionalSpec
+main = launchAff_ $ runSpec [consoleReporter] do
+  optionalSpec
   listSpec
-  log "🍝"
+  --log "🍝"
