@@ -5,7 +5,7 @@ import Course.Optional
 
 import Course.ExactlyOne (ExactlyOne(..))
 import Effect (Effect)
-import Prelude (Unit, unit)
+import Prelude (Unit, unit, (<<<))
 import Prelude (map) as P
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -34,7 +34,7 @@ infixl 4 map as <$>
 -- ExactlyOne 3
 instance exactlyOneFunctor :: Functor ExactlyOne where
   map :: forall a b. (a -> b) -> ExactlyOne a -> ExactlyOne b
-  map = \x y -> ExactlyOne (unsafeCoerce unit) --"todo: Course.Functor (<$>)#instance ExactlyOne"
+  map f (ExactlyOne a) = ExactlyOne (f a)
 
 -- | Maps a function on the List functor.
 --
@@ -45,7 +45,8 @@ instance exactlyOneFunctor :: Functor ExactlyOne where
 -- [2,3,4]
 instance listFunctor :: Functor List where
   map :: forall a b. (a -> b) -> List a -> List b
-  map = \_ _ -> Nil --"todo: Course.Functor (<$>)#instance List"
+  map _ Nil = Nil
+  map f (a :. as) = f a :. map f as
 
 -- | Maps a function on the Optional functor.
 --
@@ -56,7 +57,8 @@ instance listFunctor :: Functor List where
 -- Full 3
 instance optionalFunctor :: Functor Optional where
   map :: forall a b. (a -> b) -> Optional a -> Optional b
-  map = \_ _ -> Empty --"todo: Course.Functor (<$>)#instance Optional"
+  map f Empty = Empty
+  map f (Full a) = Full (f a)
 
 -- | Maps a function on the reader ((->) t) functor.
 --
@@ -64,7 +66,7 @@ instance optionalFunctor :: Functor Optional where
 -- 17
 instance functionFunctor :: Functor ((->) t) where
   map :: forall a b. (a -> b) -> ((->) t a) -> ((->) t b)
-  map = \_ _ -> \_ -> unsafeCoerce unit --"todo: Course.Functor (<$>)#((->) t)"
+  map = (<<<)
 
 -- | Anonymous map. Maps a constant value on a functor.
 --
@@ -75,7 +77,7 @@ instance functionFunctor :: Functor ((->) t) where
 --
 -- prop> \x q -> x <$ Full q == Full x
 voidRight :: forall f a b. Functor f => a -> f b -> f a
-voidRight = \_ m -> unsafeCoerce m --"todo: Course.Functor#(<$)"
+voidRight a = map (\_ -> a)
 
 infixl 4 voidRight as <$
 
@@ -93,7 +95,7 @@ infixl 4 voidRight as <$
 -- >>> void (+10) 5
 -- ()
 void :: forall f a. Functor f => f a -> f Unit
-void m = unsafeCoerce m --"todo: Course.Functor#void WITHOUT using unsafeCoerce!!!!!!"
+void = voidRight unit
 
 -----------------------
 -- SUPPORT LIBRARIES --

@@ -2,7 +2,7 @@ module Test.ListSpec where
 
 import Prelude
 
-import Course.List (List(..), filter, find, flatMap, flatten, flattenAgain, foldLeft, headOr, hlist, infinity, largeList, length, lengthGT4, listh, product, reverse, seqOptional, sum, take, (:.))
+import Course.List (List(..), filter, find, flatMap, produceN, flatten, flattenAgain, foldLeft, headOr, hlist, infinity, largeList, length, lengthGT4, listh, product, reverse, seqOptional, sum, take, (:.))
 import Course.Optional (Optional(..))
 import Data.Array (length) as A
 import Data.Int (even)
@@ -140,10 +140,8 @@ listSpec = describe "List" do
     -- prop "" $
     --   forAllLists (\x -> reverse (x :. Nil) == x :. Nil)
 
-  -- describe "produce" $ do
-  --   it "increment" $
-  --     let (x:.y:.z:.w:._) = produce ((+) 1) 0
-  --      in (x:.y:.z:.w:.Nil) `shouldEqual` (0:.1:.2:.3:.Nil)
-  --   it "double" $
-  --     let (x:.y:.z:.w:._) = produce ((*) 2) 1
-  --      in (x:.y:.z:.w:.Nil) `shouldEqual` (1:.2:.4:.8:.Nil)
+  describe "produce" $ do
+    it "increment" $
+      produceN ((+) 1) 0 4 `shouldEqual` (0:.1:.2:.3:.Nil)
+    it "double" $
+      produceN ((*) 2) 1 4 `shouldEqual` (1:.2:.4:.8:.Nil)

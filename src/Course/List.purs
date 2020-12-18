@@ -63,12 +63,19 @@ foldRight :: forall a b. (a -> b -> b) -> b -> List a -> b
 foldRight _ b Nil      = b
 foldRight f b (h :. t) = f h (foldRight f b t)
 
+-- reverse as = reverse' Nil as where
+--  reverse' :: List a -> List a -> List a
+--  reverse' accum Nil = Nil
+--  reverse' accum (a' :. Nil) = a' :. accum
+--  reverse' accum (a' :. as') = reverse' (a' :. accum) as'
+
 -- TODO: get this working!!!!
 -- foldLeft :: forall a b. (b -> a -> b) -> b -> List a -> b
 -- foldLeft _ b Nil      = b
 -- foldLeft f b (h :. t) = let b' = f b h in b' `seq` foldLeft f b' t
 foldLeft :: forall a b. (b -> a -> b) -> b -> List a -> b
-foldLeft f b l = foldl f b (hlist l)
+foldLeft _ b Nil       = b
+foldLeft f b (a :. as) = foldLeft f (f b a) as
 -- END Helper functions and data types
 
 -- | Returns the head of the list or the given default.
@@ -229,7 +236,9 @@ flattenAgain list = flatMap identity list
 -- >>> seqOptional (Empty :. map Full infinity)
 -- Empty
 seqOptional :: forall a. List (Optional a) -> Optional (List a)
-seqOptional = \x -> Empty -- TODO: Course.List#seqOptional
+seqOptional Nil = Full Nil
+seqOptional (Empty :. opts) = Empty
+seqOptional ((Full a) :. opts) = map (a :. _) (seqOptional opts)
 
 -- | Find the first element in the list matching the predicate.
 --
@@ -248,7 +257,8 @@ seqOptional = \x -> Empty -- TODO: Course.List#seqOptional
 -- >>> find (const True) infinity
 -- Full 0
 find :: forall a. (a -> Boolean) -> List a -> Optional a
-find = \x y -> Empty -- TODO: Course.List#find
+find _ Nil = Empty
+find pred (a :. as) = if pred a then Full a else find pred as
 
 -- | Determine if the length of the given list is greater than 4.
 --
@@ -264,7 +274,11 @@ find = \x y -> Empty -- TODO: Course.List#find
 -- >>> lengthGT4 infinity
 -- True
 lengthGT4 :: forall a. List a -> Boolean
-lengthGT4 = \x -> false -- TODO: Course.List#lengthGT4
+lengthGT4 Nil = false
+lengthGT4 list = lenGT4 list 1 where
+  lenGT4 :: List a -> Int -> Boolean
+  lenGT4 Nil _ = false
+  lenGT4 (a :. as) count = if count > 4 then true else lenGT4 as (count + 1)
 
 -- | Reverse a list.
 --
@@ -278,7 +292,12 @@ lengthGT4 = \x -> false -- TODO: Course.List#lengthGT4
 --
 -- prop> \x -> let types = x :: Int in reverse (x :. Nil) == x :. Nil
 reverse :: forall a. List a -> List a
-reverse = \x -> Nil -- TODO: Course.List#reverse
+reverse as = foldLeft (\as' a -> a :. as') Nil as
+-- reverse as = reverse' Nil as where
+--  reverse' :: List a -> List a -> List a
+--  reverse' accum Nil = Nil
+--  reverse' accum (a' :. Nil) = a' :. accum
+--  reverse' accum (a' :. as') = reverse' (a' :. accum) as'
 
 -- | Produce an infinite `List` that seeds with the given value at its head,
 -- then runs the given function for subsequent elements
@@ -288,8 +307,9 @@ reverse = \x -> Nil -- TODO: Course.List#reverse
 --
 -- >>> let (x:.y:.z:.w:._) = produce (*2) 1 in [x,y,z,w]
 -- [1,2,4,8]
-produce :: forall a. (a -> a) -> a -> List a
-produce f x = x :. produce f (f x)
+produceN :: forall a. (a -> a) -> a -> Int -> List a
+produceN _ _ 0 = Nil
+produceN f a c = a :. produceN f (f a) (c - 1)
 
 -- -- | Do anything other than reverse a list.
 -- -- Is it even possible?
