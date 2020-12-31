@@ -1,14 +1,12 @@
 module Course.Applicative where
 
-import Course.Core (error)
 import Course.ExactlyOne (ExactlyOne(..))
 import Course.Functor (class Functor, map, (<$>))
-import Course.List (List(..), (:.))
+import Course.List (List(..), foldRight, replicate, (:.))
 import Course.Optional (Optional(..))
 import Effect (Effect)
-import Prelude ((<>))
-import Prelude (map, (>>=), pure) as P
-import Unsafe.Coerce (unsafeCoerce)
+import Prelude (($), (<>))
+import Prelude (identity, map, (>>=), pure) as P
 
 -- | All instances of the `Applicative` type-class must satisfy three laws.
 -- These laws are not checked by the compiler. These laws are given as:
@@ -176,8 +174,7 @@ lift3 f fa fb fc = lift2 f fa fb <*> fc  -- error "todo: Course.Applicative#lift
 -- Full 34
 --
 -- >>> lift4 (\a b c d -> a + b + c + d) (Full 7) (Full 8) Empty  (Full 10)
--- Empty
---
+-- Empt-
 -- >>> lift4 (\a b c d -> a + b + c + d) Empty (Full 8) (Full 9) (Full 10)
 -- Empty
 --
@@ -186,16 +183,9 @@ lift3 f fa fb fc = lift2 f fa fb <*> fc  -- error "todo: Course.Applicative#lift
 --
 -- >>> lift4 (\a b c d -> a + b + c + d) length sum product (sum . filter even) (listh [4,5,6])
 -- 148
-lift4 ::
-  forall f a b c d e.
-  Applicative f =>
-  (a -> b -> c -> d -> e) ->
-  f a ->
-  f b ->
-  f c ->
-  f d ->
-  f e
+lift4 :: forall f a b c d e. Applicative f => (a -> b -> c -> d -> e) -> f a -> f b -> f c -> f d -> f e
 lift4 f fa fb fc fd = lift3 f fa fb fc <*> fd -- error "todo: Course.Applicative#lift4"
+-- lift4 f fa fb fc fd = -- error "todo: Course.Applicative#lift4"
 
 -- | Apply a nullary function in the environment.
 lift0 ::
@@ -238,7 +228,7 @@ lift1 = map
 --
 -- prop> \x y -> Full x *> Full y == Full y
 applySecond :: forall f a b. Applicative f => f a -> f b -> f b
-applySecond fa fb = error "todo: Course.Applicative#(*>)"
+applySecond fa fb = map (\_ -> P.identity) fa <*> fb
 
 infixl 4 applySecond as *>
 
@@ -261,7 +251,7 @@ infixl 4 applySecond as *>
 --
 -- prop> \x y -> Full x <* Full y == Full x
 applyFirst :: forall f a b. Applicative f => f b -> f a -> f b
-applyFirst = error "todo: Course.Applicative#(<*)"
+applyFirst fb fa = map (\b -> \_ -> b) fb <*> fa
 
 infixl 4 applyFirst as <*
 
@@ -281,12 +271,9 @@ infixl 4 applyFirst as <*
 --
 -- >>> sequence ((*10) :. (+2) :. Nil) 6
 -- [60,8]
-sequence ::
-  forall f a.
-  Applicative f =>
-  List (f a) ->
-  f (List a)
-sequence = error "todo: Course.Applicative#sequence"
+sequence :: forall f a. Applicative f => List (f a) -> f (List a)
+-- sequence fas = pure Nil
+sequence = foldRight (lift2 (:.)) (pure Nil)
 
 -- | Replicate an effect a given number of times.
 --
@@ -304,13 +291,9 @@ sequence = error "todo: Course.Applicative#sequence"
 --
 -- >>> replicateA 3 ('a' :. 'b' :. 'c' :. Nil)
 -- ["aaa","aab","aac","aba","abb","abc","aca","acb","acc","baa","bab","bac","bba","bbb","bbc","bca","bcb","bcc","caa","cab","cac","cba","cbb","cbc","cca","ccb","ccc"]
-replicateA ::
-  forall f a.
-  Applicative f =>
-  Int ->
-  f a ->
-  f (List a)
-replicateA = error "todo: Course.Applicative#replicateA"
+replicateA :: forall f a. Applicative f => Int -> f a -> f (List a)
+-- replicateA n fa = pure Nil
+replicateA n fa = sequence $ replicate n fa
 
 -- | Filter a list with a predicate that produces an effect.
 --
@@ -332,13 +315,9 @@ replicateA = error "todo: Course.Applicative#replicateA"
 -- >>> filtering (const $ True :. True :.  Nil) (1 :. 2 :. 3 :. Nil)
 -- [[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3]]
 --
-filtering ::
-  forall f a.
-  Applicative f =>
-  (a -> f Boolean) ->
-  List a ->
-  f (List a)
-filtering = error "todo: Course.Applicative#filtering"
+filtering :: forall f a. Applicative f => (a -> f Boolean) -> List a -> f (List a)
+-- filtering f as = pure Nil --error "todo: Course.Applicative#filtering"
+filtering f = foldRight (\a facc -> lift2 (\bool as -> if bool then a :. as else as) (f a) facc) (pure Nil)
 
 -----------------------
 -- SUPPORT LIBRARIES --

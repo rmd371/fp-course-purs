@@ -65,7 +65,7 @@ foldRight f b (h :. t) = f h (foldRight f b t)
 
 -- reverse as = reverse' Nil as where
 --  reverse' :: List a -> List a -> List a
---  reverse' accum Nil = Nil
+--  reverse' accum Nil = Nilk
 --  reverse' accum (a' :. Nil) = a' :. accum
 --  reverse' accum (a' :. as') = reverse' (a' :. accum) as'
 
@@ -543,15 +543,12 @@ take n (x:.xs) = x :. take (n - 1) xs
 -- drop n (_:.xs) =
 --   drop (n-1) xs
 
--- repeat :: forall a. 
---   a
---   -> List a
--- repeat x =
---   x :. repeat x
+-- repeat :: forall a. a -> List a
+-- repeat x = x :. repeat x
 
--- replicate :: forall a. Int -> a -> List a
--- replicate n x =
---   take n (repeat x)
+replicate :: forall a. Int -> a -> List a
+replicate 0 _ = Nil
+replicate n x = x :. replicate (n - 1) x
 
 -- -- reads ::
 -- --   P.Read a =>
