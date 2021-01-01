@@ -2,8 +2,9 @@ module Test.Main where
 
 import Prelude
 
-import Course.FunctorSpec (functorSpec)
+import Course.MonadSpec (spec) as M
 import Course.ApplicativeSpec (spec) as A
+import Course.FunctorSpec (functorSpec)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Test.ListSpec (listSpec)
@@ -16,5 +17,6 @@ main = launchAff_ $ runSpec [consoleReporter] do
   --optionalSpec
   --listSpec
   --functorSpec
-  A.spec
+  -- A.spec
+  M.spec
   --log "🍝"
