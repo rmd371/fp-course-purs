@@ -3,10 +3,10 @@ module Course.Monad where
 import Course.Applicative (class Applicative)
 import Course.ExactlyOne (ExactlyOne(..))
 import Course.Functor (map)
-import Course.List (List(..))
+import Course.List (List(..), foldRight)
 import Course.Optional (Optional(..))
-import Prelude (unit)
-import Unsafe.Coerce (unsafeCoerce)
+import Data.Semigroup ((<>))
+import Prelude (identity)
 
 -- | All instances of the `Monad` type-class must satisfy one law. This law
 -- is not checked by the compiler. This law is given as:
@@ -24,7 +24,7 @@ infixl 1 bind as =<<
 -- ExactlyOne 3
 instance exactlyOneMonad :: Monad ExactlyOne where
   bind :: forall a b. (a -> ExactlyOne b) -> ExactlyOne a -> ExactlyOne b
-  bind f fa = ExactlyOne (unsafeCoerce unit) --error "todo: Course.Monad (=<<)#instance ExactlyOne"
+  bind f (ExactlyOne a) = f a
 
 -- | Binds a function on a List.
 --
@@ -32,7 +32,7 @@ instance exactlyOneMonad :: Monad ExactlyOne where
 -- [1,1,2,2,3,3]
 instance monadList :: Monad List where
   bind :: forall a b. (a -> List b) -> List a -> List b
-  bind f fa = Nil --error "todo: Course.Monad bind#instance List"
+  bind f = foldRight (\a acc -> (f a) <> acc) Nil
 
 -- | Binds a function on an Optional.
 --
@@ -40,7 +40,8 @@ instance monadList :: Monad List where
 -- Full 14
 instance optionalMonad :: Monad Optional where
   bind :: forall a b. (a -> Optional b) -> Optional a -> Optional b
-  bind f fa = Empty --error "todo: Course.Monad (=<<)#instance Optional"
+  bind _ Empty = Empty
+  bind f (Full a) = f a
 
 -- | Binds a function on the reader ((->) t).
 --
@@ -48,7 +49,7 @@ instance optionalMonad :: Monad Optional where
 -- 119
 instance functionMonad :: Monad ((->) t) where
   bind :: forall t a b. (a -> ((->) t b)) -> ((->) t a) -> ((->) t b)
-  bind f fa = \_ -> (unsafeCoerce unit) -- error "todo: Course.Monad (=<<)#instance ((->) t)"
+  bind f2 f1 = \t -> f2 (f1 t) t
 
 -- | Witness that all things with (=<<) and (<$>) also have (<*>).
 --
@@ -82,7 +83,7 @@ instance functionMonad :: Monad ((->) t) where
 -- >>> ((*) <**> (+2)) 3
 -- 15
 apply :: forall f a b. Monad f => f (a -> b) -> f a -> f b
-apply f fa = map (\_ -> unsafeCoerce "todo: Course.Monad#(<**>)") fa 
+apply mf ma = bind (\f -> map (\a -> f a) ma) mf
 
 infixl 4 apply as <**>
 
@@ -100,7 +101,7 @@ infixl 4 apply as <**>
 -- >>> join (+) 7
 -- 14
 join :: forall f a b. Monad f => f (f a) -> f a
-join ffa = map (\_ -> unsafeCoerce "todo: Course.Monad#join") ffa
+join mma = bind identity mma
 
 -- | Implement a flipped version of @(=<<)@, however, use only
 -- @join@ and @(<$>)@.
@@ -109,9 +110,9 @@ join ffa = map (\_ -> unsafeCoerce "todo: Course.Monad#join") ffa
 -- >>> ((+10) >>= (*)) 7
 -- 119
 bindFlipped :: forall f a b. Monad f => f a -> (a -> f b) -> f b
-bindFlipped fa ffb = map (\_ -> unsafeCoerce "todo: Course.Monad#(>>=)") fa
+bindFlipped ma f = bind f ma
 
-infixl 1 bindFlipped as >>=
+infixr 1 bindFlipped as >>=
 
 -- | Implement composition within the @Monad@ environment.
 -- Pronounced, kleisli composition.
@@ -120,7 +121,7 @@ infixl 1 bindFlipped as >>=
 -- [2,2,3,3]
 composeKleisliFlipped ::
   forall f a b c. Monad f => (b -> f c) -> (a -> f b) -> a -> f c
-composeKleisliFlipped ffc ffb a = map (\f -> unsafeCoerce "todo: Course.Monad#(<=<)") (ffb a)
+composeKleisliFlipped fmc fmb a = bind fmc (fmb a)
 
 infixr 1 composeKleisliFlipped as <=<
 
