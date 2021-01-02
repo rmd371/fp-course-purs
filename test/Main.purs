@@ -4,6 +4,7 @@ import Prelude
 
 import Course.MonadSpec (spec) as M
 import Course.ApplicativeSpec (spec) as A
+import Course.StateSpec (spec) as S
 import Course.FunctorSpec (functorSpec)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
@@ -18,5 +19,6 @@ main = launchAff_ $ runSpec [consoleReporter] do
   --listSpec
   --functorSpec
   -- A.spec
-  M.spec
+  -- M.spec
+  S.spec
   --log "🍝"

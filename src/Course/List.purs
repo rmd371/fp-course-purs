@@ -388,37 +388,37 @@ instance arbitraryList :: Arbitrary a => Arbitrary (List a) where
 -- isEmpty (_:._) =
 --   false
 
--- span :: forall a. (a -> Boolean) -> List a -> Tuple (List a) (List a)
--- span p x = Tuple (takeWhile p x) (dropWhile p x)
+span :: forall a. (a -> Boolean) -> List a -> Tuple (List a) (List a)
+span p x = Tuple (takeWhile p x) (dropWhile p x)
 
 -- break :: forall a. (a -> Boolean) -> List a -> Tuple (List a) (List a)
 -- break p = span (not <<< p)
 
--- dropWhile :: forall a. 
---   (a -> Boolean)
---   -> List a
---   -> List a
--- dropWhile _ Nil =
---   Nil
--- dropWhile p xs@(x:.xs') =
---   if p x
---     then
---       dropWhile p xs'
---     else
---       xs
+dropWhile :: forall a. 
+  (a -> Boolean)
+  -> List a
+  -> List a
+dropWhile _ Nil =
+  Nil
+dropWhile p xs@(x:.xs') =
+  if p x
+    then
+      dropWhile p xs'
+    else
+      xs
 
--- takeWhile :: forall a. 
---   (a -> Boolean)
---   -> List a
---   -> List a
--- takeWhile _ Nil =
---   Nil
--- takeWhile p (x:.xs) =
---   if p x
---     then
---       x :. takeWhile p xs
---     else
---       Nil
+takeWhile :: forall a. 
+  (a -> Boolean)
+  -> List a
+  -> List a
+takeWhile _ Nil =
+  Nil
+takeWhile p (x:.xs) =
+  if p x
+    then
+      x :. takeWhile p xs
+    else
+      Nil
 
 -- zip :: forall a b. List a -> List b -> List (Tuple a b)
 -- zip = zipWith Tuple
