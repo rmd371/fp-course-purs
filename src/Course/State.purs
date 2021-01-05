@@ -1,16 +1,19 @@
 module Course.State where
 
-import Course.Applicative (class Applicative, apply, pure)
-import Course.Core (error)
+import Control.Monad (join)
+import Course.Applicative (class Applicative, apply, filtering, pure)
 import Course.Functor (class Functor, map)
-import Course.List (List)
-import Course.Optional (Optional(..))
-
-import Course.Monad (class Monad, bind)
+import Course.List (List(..), hlist, listh, produceN, sum, (:.))
+import Course.Monad (class Monad, bind, (>>=))
+import Course.Optional (Optional(..), contains)
+import Data.Char.Unicode (digitToInt)
+import Data.Maybe (fromMaybe)
 import Data.Ord (class Ord)
-import Data.Tuple (Tuple(..))
-import Prelude (Unit)
-import Unsafe.Coerce (unsafeCoerce)
+import Data.Set (delete, empty, fromFoldable, insert, member) as S
+import Data.String.CodeUnits (toCharArray)
+import Data.Tuple (Tuple, fst, snd, uncurry)
+import Data.Tuple.Nested ((/\))
+import Prelude (Unit, show, unit, ($), (*), (<<<))
 
 -- $setup
 -- >>> import Test.QuickCheck.Function
@@ -25,33 +28,33 @@ import Unsafe.Coerce (unsafeCoerce)
 newtype State s a = State (s -> Tuple a s)
 
 runState  :: forall s a. State s a -> s -> Tuple a s
-runState (State f) s = f s
+runState (State f) = f
 
 -- | Run the `State` seeded with `s` and retrieve the resulting state.
 --
 -- prop> \(Fun _ f) s -> exec (State f) s == snd (runState (State f) s)
 exec :: forall s a. State s a -> s -> s
-exec _ _ = unsafeCoerce "todo: Course.State#exec"
+exec state = snd <<< runState state
 
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
 --
 -- prop> \(Fun _ f) s -> eval (State f) s == fst (runState (State f) s)
 eval :: forall s a. State s a -> s -> a
-eval _ _ = unsafeCoerce "todo: Course.State#eval"
+eval state = fst <<< runState state
 
 -- | A `State` where the state also distributes into the produced value.
 --
 -- >>> runState get 0
 -- (0,0)
 get :: forall s. State s s
-get = pure (unsafeCoerce "todo: Course.State#get")
+get = State \s -> s /\ s
 
 -- | A `State` where the resulting state is seeded with the given value.
 --
 -- >>> runState (put 1) 0
 -- ((),1)
 put :: forall s. s -> State s Unit
-put _ = pure (unsafeCoerce "todo: Course.State#put")
+put s = State \_ -> unit /\ s
 
 -- | Implement the `Functor` instance for `State s`.
 --
@@ -59,7 +62,8 @@ put _ = pure (unsafeCoerce "todo: Course.State#put")
 -- (10,6)
 instance functorState :: Functor (State s) where
   map :: forall s a b. (a -> b) -> State s a -> State s b
-  map _ _ = pure (unsafeCoerce "todo: Course.State#(<$>)")
+  map mapFn (State f) = State $ uncurry go <<< f where -- uncurry is used to parse tuples
+    go a = (/\) $ mapFn a
 
 infixl 4 map as <$>
 
@@ -76,9 +80,11 @@ infixl 4 map as <$>
 -- (10,["apple","banana"])
 instance applicativeState :: Applicative (State s) where
   pure :: forall s a. a -> State s a
-  pure _ = State (\_ -> Tuple (unsafeCoerce "todo: Course.State pure#instance (State s)") (unsafeCoerce true))
-  apply :: forall s a b. State s (a -> b) -> State s a -> State s b 
-  apply _ _ = pure (unsafeCoerce "todo: Course.State (<*>)#instance (State s)")
+  pure a = State \s -> a /\ s
+  apply :: forall s a b. State s (a -> b) -> State s a -> State s b
+  apply (State ff) (State f) = State $ uncurry go <<< ff where
+    go atob = uncurry go2 <<< f where
+      go2 a = (/\) $ atob a 
 
 infixl 4 apply as <*>
 
@@ -91,7 +97,8 @@ infixl 4 apply as <*>
 -- ((),16)
 instance monadState :: Monad (State s) where
   bind :: forall s a b. (a -> State s b) -> State s a -> State s b
-  bind _ _ = pure (unsafeCoerce "todo: Course.State (=<<)#instance (State s)")
+  bind bindFn (State f) = State \s -> uncurry go $ f s where
+    go a = runState (bindFn a)
 
 infixl 4 bind as =<<
 
@@ -110,8 +117,8 @@ infixl 4 bind as =<<
 -- >>> let p x = (\s -> (const $ pure (x == 'i')) =<< put (1+s)) =<< get in runState (findM p $ listh ['a'..'h']) 0
 -- (Empty,8)
 findM :: forall f a. Monad f => (a -> f Boolean) -> List a -> f (Optional a)
--- findM _ _ = unsafeCoerce (State (\_ -> Tuple (Full 'a') 0)) --"todo: Course.State#findM"))
-findM _ _ = unsafeCoerce (State (\_ -> Tuple (Full "todo: Course.State#findM") 0)) --
+findM _ Nil = pure Empty
+findM f (a:.as) = f a >>= \bool -> if bool then pure $ Full a else findM f as
 
 -- | Find the first element in a `List` that repeats.
 -- It is possible that no element repeats, hence an `Optional` result.
@@ -120,12 +127,10 @@ findM _ _ = unsafeCoerce (State (\_ -> Tuple (Full "todo: Course.State#findM") 0
 --
 -- prop> \xs -> case firstRepeat xs of Empty -> let xs' = hlist xs in nub xs' == xs'; Full x -> length (filter (== x) xs) > 1
 -- prop> \xs -> case firstRepeat xs of Empty -> True; Full x -> let (l, (rx :. rs)) = span (/= x) xs in let (l2, r2) = span (/= x) rs in let l3 = hlist (l ++ (rx :. Nil) ++ l2) in nub l3 == l3
-firstRepeat :: forall a.
-  Ord a =>
-  List a
-  -> Optional a
-firstRepeat =
-  error "todo: Course.State#firstRepeat"
+firstRepeat :: forall a. Ord a => List a -> Optional a
+firstRepeat as = eval findS S.empty where
+  findS = findM testS as
+  testS a = State \s -> S.member a s /\ S.insert a s
 
 -- | Remove all duplicate elements in a `List`.
 -- /Tip:/ Use `filtering` and `State` with a @Data.Set#Set@.
@@ -133,12 +138,10 @@ firstRepeat =
 -- prop> \xs -> firstRepeat (distinct xs) == Empty
 --
 -- prop> \xs -> distinct xs == distinct (flatMap (\x -> x :. x :. Nil) xs)
-distinct :: forall a.
-  Ord a =>
-  List a
-  -> List a
-distinct =
-  error "todo: Course.State#distinct"
+distinct :: forall a. Ord a => List a -> List a
+distinct as = eval findS (S.fromFoldable $ hlist as) where
+  findS = filtering testS as
+  testS a = State \s -> S.member a s /\ S.delete a s
 
 -- | A happy number is a positive integer, where the sum of the square of its digits eventually reaches 1 after repetition.
 -- In contrast, a sad number (not a happy number) is where the sum of the square of its digits never reaches 1
@@ -162,4 +165,12 @@ distinct =
 -- >>> isHappy 44
 -- True
 isHappy :: Int -> Boolean
-isHappy _ = unsafeCoerce "todo: Course.State#isHappy"
+isHappy n = contains 1 $ firstRepeat $ produceN squareDigitsAndSum n 1000
+
+squareDigitsAndSum :: Int -> Int
+squareDigitsAndSum n = sum $ map (square <<< fromMaybe 0 <<< digitToInt) charList where
+  charList :: List Char
+  charList = listh $ toCharArray $ show n
+
+square :: Int -> Int
+square = join (*)

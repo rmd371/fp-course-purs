@@ -52,7 +52,7 @@ spec = do
   describe "findM" $ do
     it "find 'c' in 'a'..'h'" $
       let p x = (\s -> (const $ pure (x == 'c')) =<< put (1+s)) =<< get
-       in runState (findM p (listh ['a','b','c','d','e','f','g','h'])) 0 `shouldEqual` Tuple (Full 'c') 3
+       in runState (findM p $ listh ['a','b','c','d','e','f','g','h']) 0 `shouldEqual` Tuple (Full 'c') 3
     it "find 'i' in 'a'..'h'" $
       let p x = (\s -> (const $ pure (x == 'i')) =<< put (1+s)) =<< get
        in runState (findM p $ listh ['a','b','c','d','e','f','g','h']) 0 `shouldEqual` Tuple Empty 8
@@ -85,10 +85,11 @@ spec = do
 
   describe "distinct" $ do
     prop "No repeats after distinct" $
-      \(xs :: List Int) -> (firstRepeat (distinct xs)) === Empty     
+      \(xs :: List Int) -> (firstRepeat (distinct xs)) === Empty
     prop "" $
       (\(xs :: List Int) -> distinct xs == distinct (flatMap (\x -> x :. x :. Nil) xs))
-
+    it "Remove repeats - verify empty list doesn't always pass" $
+      distinct (1 :. 2 :. 2 :. 1 :. 3 :. Nil) `shouldEqual` (1 :. 2 :. 3 :. Nil)
   describe "isHappy" $ do
     it "4" $ isHappy 4 `shouldEqual` false
     it "7" $ isHappy 7 `shouldEqual` true
