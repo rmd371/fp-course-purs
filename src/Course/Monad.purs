@@ -100,7 +100,7 @@ infixl 4 apply as <**>
 --
 -- >>> join (+) 7
 -- 14
-join :: forall f a b. Monad f => f (f a) -> f a
+join :: forall f a. Monad f => f (f a) -> f a
 join mma = bind identity mma
 
 -- | Implement a flipped version of @(=<<)@, however, use only

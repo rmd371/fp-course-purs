@@ -62,8 +62,8 @@ put s = State \_ -> unit /\ s
 -- (10,6)
 instance functorState :: Functor (State s) where
   map :: forall s a b. (a -> b) -> State s a -> State s b
-  map mapFn (State f) = State $ uncurry go <<< f where -- uncurry is used to parse tuples
-    go a = (/\) $ mapFn a
+  map mapFn (State f) = State $ go <<< f where -- uncurry is used to parse tuples
+    go (a /\ b) = (/\) (mapFn a) b
 
 infixl 4 map as <$>
 

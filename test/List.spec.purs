@@ -2,6 +2,7 @@ module Test.ListSpec where
 
 import Prelude
 
+import Course.Functor(map, (<$>))
 import Course.List (List(..), filter, find, flatMap, produceN, flatten, flattenAgain, foldLeft, headOr, hlist, infinity, largeList, length, lengthGT4, listh, product, reverse, seqOptional, sum, take, (:.))
 import Course.Optional (Optional(..))
 import Data.Array (length) as A

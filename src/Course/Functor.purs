@@ -1,13 +1,12 @@
 module Course.Functor where
 
-import Course.List
 import Course.Optional
-
+import Course.List(List(..), (:.))
 import Course.ExactlyOne (ExactlyOne(..))
+
 import Effect (Effect)
 import Prelude (Unit, unit, (<<<))
 import Prelude (map) as P
-import Unsafe.Coerce (unsafeCoerce)
 
 -- | All instances of the `Functor` type-class must satisfy two laws. These laws
 -- are not checked by the compiler. These laws are given as:

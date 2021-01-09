@@ -8,14 +8,14 @@
 
 module Course.List where
 
-import Course.Optional
 import Prelude
 
+import Course.Optional (Optional(..))
 import Data.Array (concat, foldl, foldr, (..), (:))
 import Data.Array.NonEmpty (concatMap)
 import Data.Lazy (defer, force)
+import Data.Show as S
 import Data.String.CodeUnits (toCharArray)
-import Data.String.Utils (fromCharArray)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Aff (Aff)
@@ -49,7 +49,7 @@ derive instance listOrd :: Ord a => Ord (List a)
 -- Right-associative
 infixr 5 Cons as :.
 
-instance showList :: Show t => Show (List t) where
+instance showList :: S.Show t => S.Show (List t) where
   show = show <<< foldRight (:) []
 
 -- The list of integers from zero to infinity.
@@ -238,7 +238,7 @@ flattenAgain list = flatMap identity list
 seqOptional :: forall a. List (Optional a) -> Optional (List a)
 seqOptional Nil = Full Nil
 seqOptional (Empty :. opts) = Empty
-seqOptional ((Full a) :. opts) = map (a :. _) (seqOptional opts)
+seqOptional ((Full a) :. opts) = P.map (a :. _) (seqOptional opts)
 
 -- | Find the first element in the list matching the predicate.
 --
@@ -339,7 +339,7 @@ listh = foldr (:.) Nil
 
 -- RMD added code for quickcheck
 instance arbitraryList :: Arbitrary a => Arbitrary (List a) where
-  arbitrary = map listh arbitrary
+  arbitrary = P.map listh arbitrary
 -- RMD added code for quickcheck
 
 -- putStr :: Chars -> Effect ()

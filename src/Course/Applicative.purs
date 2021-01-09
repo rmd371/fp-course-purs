@@ -52,7 +52,7 @@ instance applicativeList :: Applicative List where
   pure a = a :. Nil
   apply :: forall a b. List (a -> b) -> List a -> List b
   apply Nil _ = Nil
-  apply (f :. fs) as = map f as <> apply fs as
+  apply (f :. fs) as = P.map f as <> apply fs as
 
 -- | Insert into an Optional.
 --

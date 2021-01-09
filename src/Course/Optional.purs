@@ -1,6 +1,11 @@
 module Course.Optional where
 
-import Prelude
+import Control.Applicative as A
+import Control.Apply as Ap
+import Control.Monad as M
+import Prelude (class Show, class Eq, show, (<<<), (==))
+import Prelude as P
+import Data.Function (flip)
 
 -- | The `Optional` data type contains 0 or 1 value.
 --
@@ -76,24 +81,23 @@ applyOptional :: forall a b. Optional (a -> b) -> Optional a -> Optional b
 applyOptional f a = bindOptional (\f' -> mapOptional f' a) f
 
 twiceOptional :: forall a b c. (a -> b -> c) -> Optional a -> Optional b -> Optional c
-twiceOptional f = apply <<< mapOptional f
+twiceOptional f = applyOptional <<< mapOptional f
 
 contains :: forall a. Eq a => a -> Optional a -> Boolean
 contains _ Empty = false
 contains a (Full z) = a == z
 
-instance functorOptional :: Functor Optional where
+instance functorOptional :: P.Functor Optional where
   map :: forall a b. (a -> b) -> Optional a -> Optional b
   map = mapOptional
 
-instance applyOptional' :: Apply Optional where
+instance applyOptional' :: Ap.Apply Optional where
   apply :: forall a b. Optional (a -> b) -> Optional a -> Optional b
   apply = applyOptional
 
-instance applicativeOptional :: Applicative Optional where
-  pure :: forall a. a -> Optional a
+instance applicativeOptional :: A.Applicative Optional where
   pure = Full
 
-instance monadOptional :: Bind Optional where
+instance monadOptional :: M.Bind Optional where
   bind :: forall a b. Optional a -> (a -> Optional b) -> Optional b
   bind = flip bindOptional
