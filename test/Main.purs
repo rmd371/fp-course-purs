@@ -3,6 +3,7 @@ module Test.Main where
 import Prelude
 
 import Course.MonadSpec (spec) as M
+import Course.ExtendSpec (spec) as E
 import Course.ApplicativeSpec (spec) as A
 import Course.StateSpec (spec) as S
 import Course.StateTSpec (spec) as ST
@@ -22,5 +23,6 @@ main = launchAff_ $ runSpec [consoleReporter] do
   -- A.spec
   -- M.spec
   --S.spec
-  ST.spec
+  --ST.spec
+  E.spec
   --log "🍝"

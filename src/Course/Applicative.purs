@@ -3,7 +3,7 @@ module Course.Applicative where
 import Course.ExactlyOne (ExactlyOne(..))
 import Course.Functor (class Functor, map, (<$>))
 import Course.List (List(..), foldRight, replicate, (:.))
-import Course.Optional (Optional(..))
+import Course.Optional (Optional(..), mapOptional)
 import Effect (Effect)
 import Prelude (($), (<>))
 import Prelude (identity, map, (>>=), pure) as P
@@ -71,7 +71,7 @@ instance applicativeOptional :: Applicative Optional where
   pure = Full
   apply :: forall a b. Optional (a -> b) -> Optional a -> Optional b
   apply Empty _ = Empty
-  apply (Full f) optA = map f optA
+  apply (Full f) optA = mapOptional f optA
 
 -- | Insert into a constant function.
 --

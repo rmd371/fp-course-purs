@@ -8,7 +8,6 @@ import Course.Monad ((=<<), (>>=))
 import Course.Optional (Optional(..))
 import Course.State (put, runState)
 import Course.StateT (runStateT, Logger(..), OptionalT(..), StateT(..), distinct', distinctF, distinctG, getT, log1, putT, runOptionalT, runState', state')
-import Data.String.CodeUnits (toCharArray)
 import Data.Tuple.Nested ((/\))
 import Effect.Class (class MonadEffect, liftEffect)
 import Prelude (class Monad, Unit, const, discard, unit, ($), (+), (*), (<>))
@@ -116,7 +115,7 @@ spec = do
       it "five" $ do
         let
           ot =
-            OptionalT (Empty :. Nil) <*> OptionalT (Full 1 :. Full 2 :. Nil)
+            (OptionalT (Empty :. Nil)) <*> (OptionalT (Full 1 :. Full 2 :. Nil))
         runOptionalT ot `shouldEqual` (Empty :. Nil :: List (Optional Int))
       it "six" $ do
         let
@@ -150,7 +149,7 @@ spec = do
           `shouldEqual`
             Logger (1:.2:.3:.4:.Nil) 10
 
-    describe "Functor" $ do
+    describe "Monad" $ do
       it "(=<<) for Logger" $ do
         let
           func a =
@@ -167,13 +166,13 @@ spec = do
       let
         expected =
           Logger
-            (listh <$> (toCharArray  "even number: 2":.toCharArray "even number: 2":.toCharArray "even number: 6":.Nil))
+            ("even number: 2":."even number: 2":."even number: 6":.Nil)
             (Full (1:.2:.3:.6:.Nil))
       distinctG (1:.2:.3:.2:.6:.Nil) `shouldEqual` expected
     it "Empty case" $ do
       let
         expected =
           Logger
-            (listh <$> (toCharArray "even number: 2":.toCharArray "even number: 2":.toCharArray "even number: 6":.toCharArray "aborting > 100: 106":.Nil))
+            ("even number: 2":."even number: 2":."even number: 6":."aborting > 100: 106":.Nil)
             Empty
       distinctG (listh [1,2,3,2,6,106]) `shouldEqual` expected

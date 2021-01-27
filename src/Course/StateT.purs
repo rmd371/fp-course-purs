@@ -1,17 +1,20 @@
 module Course.StateT where
 
-import Course.Applicative (class Applicative, pure)
+import Control.Category (identity)
+import Course.Applicative (class Applicative, apply, filtering, lift2, pure, (<*>))
 import Course.Core (error)
-import Course.ExactlyOne (ExactlyOne(..))
-import Course.Functor (class Functor, map)
-import Course.List (List(..))
-import Course.Monad (class Monad, bind)
-import Course.Optional (Optional(..))
-
+import Course.ExactlyOne (ExactlyOne(..), runExactlyOne)
+import Course.Functor (class Functor, map, (<$>))
+import Course.List (List(..), listh, (:.))
+import Course.Monad (class Monad, bind, (=<<), (>>=))
+import Course.Optional (Optional(..), optional)
 import Data.Identity (Identity(..))
-import Data.Tuple (Tuple)
-import Data.Tuple.Nested ((/\))
-import Prelude (class Eq, class Show, show, unit, ($))
+import Data.Ord (class Ord)
+import Data.Set as S
+import Data.String.Utils (toCharArray)
+import Data.Tuple (Tuple, fst, snd)
+import Data.Tuple.Nested (over1, (/\))
+import Prelude (class Eq, class Show, Unit, mod, not, show, unit, ($), (<<<), (<>), (==), (>))
 import Prelude as P
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -34,13 +37,7 @@ runStateT (StateT stof) s = stof s
 -- [(3,0)]
 instance functorStateT :: Functor f => Functor (StateT s f) where
   map :: forall s a f b. Functor f => (a -> b) -> StateT s f a -> StateT s f b
-  map _ _ = StateT \_ -> unsafeCoerce Nil --error "todo: Course.StateT (<$>)#instance (StateT s f)"
-  -- map atob (StateT stof) = StateT \s -> map (uncurry foo) (stof s) where
-    -- foo a s' = atob a /\ s'
-    
-
-infixl 4 map as <$>
-
+  map atob (StateT f) = StateT \s -> over1 atob <$> f s
 
 -- | Implement the `Applicative` instance for @StateT s f@ given a @Monad f@.
 --
@@ -60,11 +57,11 @@ infixl 4 map as <$>
 -- >>> runStateT (StateT (\s -> ((+2), s P.++ [1]) :. ((+3), s P.++ [1]) :. Nil) <*> (StateT (\s -> (2, s P.++ [2]) :. Nil))) [0]
 -- [(4,[0,1,2]),(5,[0,1,2])]
 instance pureStateT :: Monad f => Applicative (StateT s f) where
-  pure :: forall s f a. a -> StateT s f a
-  pure _ = StateT \_ -> unsafeCoerce Nil --error "todo: Course.StateT pure#instance (StateT s f)"
+  --TODO: add type constraint to starter for pure
+  pure :: forall s f a. Monad f => a -> StateT s f a
+  pure a = StateT $ \s -> pure $ a /\ s
   apply :: forall s f a b. Monad f => StateT s f (a -> b) -> StateT s f a -> StateT s f b
-  -- apply = error "todo: Course.StateT (<*>)#instance (StateT s f)"
-  apply _ st = unsafeCoerce st -- error "todo: Course.StateT (<*>)#instance (StateT s f)"
+  apply (StateT smf) (StateT sma) = StateT \s -> smf s >>= \(f/\s') -> over1 f <$> sma s'
 
 -- | Implement the `Monad` instance for @StateT s f@ given a @Monad f@.
 -- Make sure the state value is passed through in `bind`.
@@ -75,10 +72,11 @@ instance pureStateT :: Monad f => Applicative (StateT s f) where
 -- >>> let modify f = StateT (\s -> pure ((), f s)) in runStateT (modify (+1) >>= \() -> modify (*2)) 7
 -- ((),16)
 instance monadStateT :: Monad f => Monad (StateT s f) where
-  bind :: forall s f a b. (a -> StateT s f b) -> StateT s f a -> StateT s f b
-  bind _ st = unsafeCoerce st --error "todo: Course.StateT (=<<)#instance (StateT s f)"
+  bind :: forall s f a b. Monad f => (a -> StateT s f b) -> StateT s f a -> StateT s f b
+  bind f (StateT sma) = StateT \s -> sma s >>= \(a/\s') -> runStateT (f a) s'
 
-infixl 4 bind as =<<
+--TODO: remove from starter
+--infixl 4 bind as =<<
 
 -- | A `State'` is `StateT` specialised to the `ExactlyOne` functor.
 type State' s a = StateT s ExactlyOne a
@@ -88,50 +86,37 @@ type State' s a = StateT s ExactlyOne a
 -- >>> runStateT (state' $ runState $ put 1) 0
 -- ExactlyOne  ((),1)
 state' :: forall s a. (s -> Tuple a s) -> State' s a
-state' _ = StateT \_ -> ExactlyOne $ unsafeCoerce (unit /\ 99) --error "todo: Course.StateT#state'"
+state' f = StateT \s -> pure $ f s
 
 -- | Provide an unwrapper for `State'` values.
 --
 -- >>> runState' (state' $ runState $ put 1) 0
 -- ((),1)
 runState' :: forall s a. State' s a -> s -> Tuple a s
-runState' _ _ = unsafeCoerce (unit /\ unit) --error "todo: Course.StateT#runState'"
+runState' st' = runExactlyOne <<< runStateT st'
 
 -- | Run the `StateT` seeded with `s` and retrieve the resulting state.
 execT :: forall s f a. Functor f => StateT s f a -> s -> f s
-execT _ s = error "todo: Course.StateT#execT"
+execT (StateT sma) s = snd <$> sma s
 
 -- | Run the `State` seeded with `s` and retrieve the resulting state.
-exec' :: forall s a.
-  State' s a
-  -> s
-  -> s
-exec' =
-  error "todo: Course.StateT#exec'"
+exec' :: forall s a. State' s a -> s -> s
+exec' st' = snd <<< runState' st'
 
 -- | Run the `StateT` seeded with `s` and retrieve the resulting value.
-evalT :: forall s f a.
-  Functor f =>
-  StateT s f a
-  -> s
-  -> f a
-evalT =
-  error "todo: Course.StateT#evalT"
+evalT :: forall s f a. Functor f => StateT s f a -> s -> f a
+evalT (StateT sma) s = fst <$> sma s
 
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
-eval' :: forall s a.
-  State' s a
-  -> s
-  -> a
-eval' =
-  error "todo: Course.StateT#eval'"
+eval' :: forall s a. State' s a -> s -> a
+eval' st' = fst <<< runState' st'
 
 -- | A `StateT` where the state also distributes into the produced value.
 --
 -- >>> (runStateT (getT :: StateT Int List Int) 3)
 -- [(3,3)]
 getT :: forall s f. Applicative f => StateT s f s
-getT = unsafeCoerce Identity \_ -> Nil --error "todo: Course.StateT#getT"
+getT = StateT \s -> pure $ s/\s
 
 -- | A `StateT` where the resulting state is seeded with the given value.
 --
@@ -141,19 +126,15 @@ getT = unsafeCoerce Identity \_ -> Nil --error "todo: Course.StateT#getT"
 -- >>> runStateT (putT 2 :: StateT Int List ()) 0
 -- [((),2)]
 putT :: forall s f. Applicative f => s -> StateT s f P.Unit
-putT _ = unsafeCoerce Identity \_ -> Nil --error "todo: Course.StateT#putT"
+putT s = StateT \_ -> pure $ unit/\s
 
 -- | Remove all duplicate elements in a `List`.
 --
 -- /Tip:/ Use `filtering` and `State'` with a @Data.Set#Set@.
 --
 -- prop> \xs -> distinct' xs == distinct' (flatMap (\x -> x :. x :. Nil) xs)
-distinct' :: forall a.
-  P.Ord a => P.Semiring a =>
-  List a
-  -> List a
-distinct' =
-  error "todo: Course.StateT#distinct'"
+distinct' :: forall a. P.Ord a => P.Semiring a => List a -> List a
+distinct' as = eval' (filtering (\a -> state' \s -> (not $ S.member a s) /\ S.insert a s) as) S.empty
 
 -- | Remove all duplicate elements in a `List`.
 -- However, if you see a value greater than `100` in the list,
@@ -166,21 +147,22 @@ distinct' =
 --
 -- >>> distinctF $ listh [1,2,3,2,1,101]
 -- Empty
-distinctF :: forall a. P.Ord a => P.Semiring a => List a -> Optional (List a)
-distinctF _ = Empty --error "todo: Course.StateT#distinctF"
+-- NOTE: had to change type signature RMD, no type class Num in purescript
+distinctF :: List Int -> Optional (List Int)
+distinctF as = evalT (filtering (\a -> StateT \s -> if a > 100 then Empty else Full ((not $ S.member a s) /\ S.insert a s)) as) S.empty
 
 -- | An `OptionalT` is a functor of an `Optional` value.
 data OptionalT f a = OptionalT (f (Optional a))
 
 runOptionalT :: forall a f. Functor f => OptionalT f a -> f (Optional a)
-runOptionalT (OptionalT f) = f --error "todo"
+runOptionalT (OptionalT fa) = fa
 
 -- | Implement the `Functor` instance for `OptionalT f` given a Functor f.
 --
 -- >>> runOptionalT $ (+1) <$> OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Empty]
 instance mapOptionalT :: Functor f => Functor (OptionalT f) where
-  map _ ft = unsafeCoerce ft --error "todo: Course.StateT (<$>)#instance (OptionalT f)"
+  map f (OptionalT fa) = OptionalT $ map f <$> fa
 
 -- | Implement the `Applicative` instance for `OptionalT f` given a Monad f.
 --
@@ -198,7 +180,7 @@ instance mapOptionalT :: Functor f => Functor (OptionalT f) where
 -- >>> runOptionalT $ OptionalT (Full (+1) :. Empty :. Nil) <*> OptionalT (Empty :. Nil)
 -- [Empty,Empty]
 --
--- >>> runOptionalT $ OptionalT (Empty :. Nil) <*> OptionalT (Full 1 :. Full 2 :. Nil)
+-- >>> runOptionalT $ OptionalT (Empty :. Nil) <*> OptionalT (Full 1 :. Full 2 :. Nil) 
 -- [Empty]
 --
 -- >>> runOptionalT $ OptionalT (Full (+1) :. Empty :. Nil) <*> OptionalT (Full 1 :. Full 2 :. Nil)
@@ -207,15 +189,17 @@ instance mapOptionalT :: Functor f => Functor (OptionalT f) where
 -- >>> runOptionalT $ OptionalT (Full (+1) :. Full (+2) :. Nil) <*> OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Empty,Full 3,Empty]
 instance pureOptionalT :: Monad f => Applicative (OptionalT f) where
-  pure = error "todo: Course.StateT pure#instance (OptionalT f)"
-  apply _ ot2 = unsafeCoerce ot2 --error "todo: Course.StateT (<*>)#instance (OptionalT f)"
+  pure = OptionalT <<< pure <<< Full
+  apply :: forall f a b. Monad f => OptionalT f (a -> b) -> OptionalT f a -> OptionalT f b
+  apply (OptionalT fOptAtoB) (OptionalT fOptA) = OptionalT $ fOptAtoB >>= onFull \atob -> map (map atob) fOptA
 
 -- | Implement the `Monad` instance for `OptionalT f` given a Monad f.
 --
 -- >>> runOptionalT $ (\a -> OptionalT (Full (a+1) :. Full (a+2) :. Nil)) =<< OptionalT (Full 1 :. Empty :. Nil)
 -- -- [Full 2,Full 3,Empty]
 instance monadOptionalT :: Monad f => Monad (OptionalT f) where
-  bind _ ot = unsafeCoerce ot --error "todo: Course.StateT (=<<)#instance (OptionalT f)"
+  bind :: forall f a b. Monad f => (a -> OptionalT f b) -> OptionalT f a -> OptionalT f b
+  bind f (OptionalT fOptA) = OptionalT $ fOptA >>= onFull (runOptionalT <<< f)
 
 -- | A `Logger` is a pair of a list of log values (`[l]`) and an arbitrary value (`a`).
 data Logger l a = Logger (List l) a
@@ -228,7 +212,8 @@ instance showLogger :: (Show ls, Show a) => Show (Logger ls a) where
 -- >>> (+3) <$> Logger (listh [1,2]) 3
 -- Logger [1,2] 6
 instance functorLogger :: Functor (Logger l) where
-  map _ l = unsafeCoerce l --error "todo: Course.StateT (<$>)#instance (Logger l)"
+  map :: forall a b. (a -> b) -> Logger l a -> Logger l b
+  map f (Logger ls a) = Logger ls $ f a
 
 -- | Implement the `Applicative` instance for `Logger`.
 --
@@ -238,8 +223,10 @@ instance functorLogger :: Functor (Logger l) where
 -- >>> Logger (listh [1,2]) (+7) <*> Logger (listh [3,4]) 3
 -- Logger [1,2,3,4] 10
 instance applicativeLogger :: Applicative (Logger l) where
-  pure _ = unsafeCoerce (Logger Nil "error - todo: Course.StateT pure#instance (Logger l)")
-  apply _ l = unsafeCoerce l --error "todo: Course.StateT (<*>)#instance (Logger l)"
+  pure :: forall a l. a -> Logger l a
+  pure a = Logger Nil a
+  apply :: forall l a b. Logger l (a -> b) -> Logger l a -> Logger l b
+  apply (Logger ls' f) (Logger ls a) = Logger (ls' <> ls) (f a)
 
 -- | Implement the `Monad` instance for `Logger`.
 -- The `bind` implementation must append log values to maintain associativity.
@@ -247,14 +234,15 @@ instance applicativeLogger :: Applicative (Logger l) where
 -- >>> (\a -> Logger (listh [4,5]) (a+3)) =<< Logger (listh [1,2]) 3
 -- Logger [1,2,4,5] 6
 instance monadLogger :: Monad (Logger l) where
-  bind _ l = unsafeCoerce l --error "todo: Course.StateT (=<<)#instance (Logger l)"
+  bind :: forall l a b. (a -> Logger l b) -> Logger l a -> Logger l b
+  bind f (Logger ls a) = (Logger ls identity) <*> f a
 
 -- | A utility function for producing a `Logger` with one log value.
 --
 -- >>> log1 1 2
 -- Logger [1] 2
 log1 :: forall l a. l -> a -> Logger l a
-log1 _ _ = unsafeCoerce (Logger Nil "todo: Course.StateT#log1")
+log1 l a = Logger (l :. Nil) a
 
 -- | Remove all duplicate integers from a list. Produce a log as you go.
 -- If there is an element above 100, then abort the entire computation and produce no result.
@@ -270,9 +258,14 @@ log1 _ _ = unsafeCoerce (Logger Nil "todo: Course.StateT#log1")
 --
 -- >>> distinctG $ listh [1,2,3,2,6,106]
 -- Logger ["even number: 2","even number: 2","even number: 6","aborting > 100: 106"] Empty
-distinctG :: forall a. P.Semiring a => P.Show a =>
-  List a -> Logger (List Char) (Optional (List a))
-distinctG _ = Logger Nil Empty -- error "todo: Course.StateT#distinctG"
+distinctG :: List Int -> Logger String (Optional (List Int))
+distinctG ns = runOptionalT $ evalT (filtering (\n -> StateT \s -> OptionalT $ testN n s) ns) S.empty where
+  testN :: Int -> S.Set Int -> Logger String (Optional (Tuple Boolean (S.Set Int)))
+  testN n s =
+    if n > 100 then log1 ("aborting > 100: " <> show n) Empty
+    else
+      if n `mod` 2 == 1 then pure (Full $ (not $ S.member n s) /\ (S.insert n s))
+      else log1 ("even number: " <> show n) (Full $ (not $ S.member n s) /\ (S.insert n s))
 
 onFull :: forall f t a.
   Applicative f =>
