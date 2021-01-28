@@ -6,8 +6,7 @@ import Course.Functor
 import Course.List
 import Course.Optional
 
-import Prelude (pure, ($))
-import Unsafe.Coerce (unsafeCoerce)
+import Prelude (identity, ($), (<<<))
 
 -- | All instances of the `Extend` type-class must satisfy one law. This law
 -- is not checked by the compiler. This law is given as:
@@ -28,11 +27,8 @@ infixr 1 extend as <<=
 -- >>> id <<= ExactlyOne 7
 -- ExactlyOne (ExactlyOne 7)
 instance exactlyOneExtend :: Extend ExactlyOne where
-  extend :: forall a b.
-    (ExactlyOne a -> b)
-    -> ExactlyOne a
-    -> ExactlyOne b
-  extend = \f ea -> ExactlyOne (unsafeCoerce $ ExactlyOne "todo: Course.Extend (<<=)#instance ExactlyOne") --error "todo: Course.Extend (<<=)#instance ExactlyOne"
+  extend :: forall a b. (ExactlyOne a -> b) -> ExactlyOne a -> ExactlyOne b
+  extend = (<<<) ExactlyOne
 
 -- | Implement the @Extend@ instance for @List@.
 --
@@ -45,11 +41,9 @@ instance exactlyOneExtend :: Extend ExactlyOne where
 -- >>> reverse <<= ((1 :. 2 :. 3 :. Nil) :. (4 :. 5 :. 6 :. Nil) :. Nil)
 -- [[[4,5,6],[1,2,3]],[[4,5,6]]]
 instance listExtend :: Extend List where
-  extend :: forall a b.
-    (List a -> b)
-    -> List a
-    -> List b
-  extend = \f as -> Nil --error "todo: Course.Extend (<<=)#instance List"
+  extend :: forall a b. (List a -> b) -> List a -> List b
+  extend _ Nil = Nil
+  extend f (a :. as) = (f $ a :. as) :. extend f as
 
 -- | Implement the @Extend@ instance for @Optional@.
 --
@@ -59,11 +53,8 @@ instance listExtend :: Extend List where
 -- >>> id <<= Empty
 -- Empty
 instance optionalExtend :: Extend Optional where
-  extend :: forall a b.
-    (Optional a -> b)
-    -> Optional a
-    -> Optional b
-  extend = \f a -> Empty --error "todo: Course.Extend (<<=)#instance Optional"
+  extend :: forall a b. (Optional a -> b) -> Optional a -> Optional b
+  extend f oa = (\_ -> f oa) <$> oa
 
 -- | Duplicate the functor using extension.
 --
@@ -78,8 +69,5 @@ instance optionalExtend :: Extend Optional where
 --
 -- >>> cojoin Empty
 -- Empty
-cojoin :: forall f a.
-  Extend f =>
-  f a
-  -> f (f a)
-cojoin = \fa -> map (\_ -> fa) fa --unsafeCoerce (unsafeCoerce "todo: Course.Extend#cojoin")
+cojoin :: forall f a. Extend f => f a -> f (f a)
+cojoin = extend identity
