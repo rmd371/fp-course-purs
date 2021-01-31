@@ -380,13 +380,13 @@ instance arbitraryList :: Arbitrary a => Arbitrary (List a) where
 -- isPrefixOf (x:.xs) (y:.ys) =
 --   x == y && isPrefixOf xs ys
 
--- isEmpty :: forall a. 
---   List a
---   -> Boolean
--- isEmpty Nil =
---   true
--- isEmpty (_:._) =
---   false
+isEmpty :: forall a. 
+  List a
+  -> Boolean
+isEmpty Nil =
+  true
+isEmpty (_:._) =
+  false
 
 span :: forall a. (a -> Boolean) -> List a -> Tuple (List a) (List a)
 span p x = Tuple (takeWhile p x) (dropWhile p x)
@@ -482,12 +482,12 @@ takeWhile p (x:.xs) =
 -- any p =
 --   foldRight ((||) . p) false
 
--- all :: forall a. 
---   (a -> Boolean)
---   -> List a
---   -> Boolean
--- all p =
---   foldRight ((&&) . p) true
+all :: forall a. 
+  (a -> Boolean)
+  -> List a
+  -> Boolean
+all p =
+  foldRight ((&&) <<< p) true
 
 -- or :: List Boolean -> Boolean
 -- or = any identity

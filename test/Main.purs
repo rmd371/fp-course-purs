@@ -9,6 +9,7 @@ import Course.TraversableSpec (spec) as T
 import Course.ApplicativeSpec (spec) as A
 import Course.StateSpec (spec) as S
 import Course.StateTSpec (spec) as ST
+import Course.ListZipperSpec (spec) as LZ
 import Course.FunctorSpec (functorSpec)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
@@ -28,5 +29,6 @@ main = launchAff_ $ runSpec [consoleReporter] do
   --ST.spec
   -- E.spec
   -- C.spec
-  T.spec
+  -- T.spec
+  LZ.spec
   --log "🍝"
