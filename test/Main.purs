@@ -5,6 +5,7 @@ import Prelude
 import Course.MonadSpec (spec) as M
 import Course.ExtendSpec (spec) as E
 import Course.ComonadSpec (spec) as C
+import Course.TraversableSpec (spec) as T
 import Course.ApplicativeSpec (spec) as A
 import Course.StateSpec (spec) as S
 import Course.StateTSpec (spec) as ST
@@ -26,5 +27,6 @@ main = launchAff_ $ runSpec [consoleReporter] do
   --S.spec
   --ST.spec
   -- E.spec
-  C.spec
+  -- C.spec
+  T.spec
   --log "🍝"
